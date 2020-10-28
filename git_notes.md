@@ -117,7 +117,7 @@ git rm --f readme1.txt  删除readme1.txt的跟踪，并且删除本地文件。
 
 ![git-br-create](git_notes.assets/2.jpg)
 
-你看，Git创建一个分支很快，因为除了增加一个`dev`指针，改改`HEAD`的指向，工作区的文件都没有任何变化！
+Git创建一个分支很快，因为除了增加一个`dev`指针，改改`HEAD`的指向，工作区的文件都没有任何变化！
 
 不过，从现在开始，对工作区的修改和提交就是针对`dev`分支了，比如新提交一次后，`dev`指针往前移动一步，而`master`指针不变：
 
@@ -132,8 +132,6 @@ git rm --f readme1.txt  删除readme1.txt的跟踪，并且删除本地文件。
 合并完分支后，甚至可以删除`dev`分支。删除`dev`分支就是把`dev`指针给删掉，删掉后，我们就剩下了一条`master`分支：
 
 ![git-br-rm](git_notes.assets/5.jpg)
-
-真是太神奇了，你看得出来有些提交是通过分支完成的吗？
 
 Git鼓励大量使用分支：
 
@@ -164,4 +162,120 @@ Git鼓励大量使用分支：
 ![git-br-conflict-merged](git_notes.assets/7.jpg)
 
 用`git log --graph`命令可以看到分支合并图。
+
+**分支管理策略:**  
+
+通常，合并分支时，Git会用`Fast forward`模式，但这种模式下，删除分支后，会丢掉分支信息。如果u要强制禁止`Fast forward`模式,Git就会在merge时<u>生成一个新的commit</u>,这样,从分支历史上就可以看到分支信息.
+
+```
+git switch -c dev
+git add readme.txt
+git commit -m "add merge"
+git switch master
+git merge --no-ff -m "merge with no-ff" dev
+```
+
+因为要创建一个新的commit, 所以在这里加上`-m`参数.
+
+合并后, 使用`git log`查看分支历史:
+
+```
+$ git log --graph --pretty=oneline --abbrev-commit
+*   e1e9c68 (HEAD -> master) merge with no-ff
+|\  
+| * f52c633 (dev) add merge
+|/  
+*   cf810e4 conflict fixed
+...
+```
+
+不使用`Fast forward`模式，merge后就像这样：
+
+![git-no-ff-mode](git_notes.assets/8.jpg)
+
+**Bug分支:**
+
+每个bug都可以通过一个新的临时分支来修复，修复后，合并分支，然后将临时分支删除。
+
+**Feature分支:**
+
+添加一个新功能时，为了避免把主分支搞乱了，每添加一个新功能，最好新建一个feature分支，在上面开发，完成后，合并，最后，删除该feature分支。
+
+**多人协作:**
+
+当你从远程仓库克隆时，实际上Git自动把本地的`master`分支和远程的`master`分支对应起来了，并且，远程仓库的默认名称是`origin`。
+
+查看远程库的信息,用`git remote` ,或者`git remote -v`显示更详细的信息.
+
+```
+$ git remote -v                                               
+origin  git@github.com:Penguin-P/learn-git.git (fetch)
+origin  git@github.com:Penguin-P/learn-git.git (push)
+```
+
+**推送分支:**
+
+推送分支，就是把<u>该分支上</u>的所有本地提交推送到远程库。推送时，要指定本地分支，这样，Git就会把该分支推送到远程库<u>对应的</u>远程分支上：
+
+```
+git push origin master
+```
+
+如果要推送其他分支，比如`dev`，就改成：
+
+```
+git push origin dev
+```
+
+并不是一定要把本地分支往远程推送.
+
+**抓取分支:**
+
+当小明从远程仓库克隆时, 默认情况下,只能看到本地的`master`分支, 如果想在`dev`分支上开发,就必须创建远程仓库`origin`的`dev`分支到本地,使用如下命令:
+
+```
+git checkout -b dev origin/dev
+```
+
+然后,小明就可以在`dev`分支上开发, 并时不时地把`dev`分支`push`到远程
+
+小明已经向`origin/dev`分支推送了他的提交, 如果碰巧你也对同样的文件做了修改,并试图推送.这时会推送失败,需要先用`git pull`把最新的提交从`origin/dev`抓下来:
+
+```
+切换到本地dev分支
+$ git pull
+There is no tracking information for the current branch.
+Please specify which branch you want to merge with.
+See git-pull(1) for details.
+
+    git pull <remote> <branch>
+
+If you wish to set tracking information for this branch you can do so with:
+
+    git branch --set-upstream-to=origin/<branch> dev
+```
+
+`git pull`也失败了，原因是没有指定本地`dev`分支与远程`origin/dev`分支的链接，根据提示，设置`dev`和`origin/dev`的链接：
+
+```
+git branch --set-upstream-to=origin/dev dev
+```
+
+然后:
+
+```
+git pull 会自动拉取和当前所在的本地分支链接起来的远程分支, 等同于做了 git fetch 和 git merge
+获取到了远程分支,并将其与本地对应的分支合并.
+```
+
+`git pull`成功，但是合并有冲突，需要手动解决，解决的方法和之前的解决冲突方法一样.解决后，提交，再push
+
+因此，多人协作的工作模式通常是这样：
+
+1. 首先，可以试图用`git push origin <branch-name>`推送自己的修改；
+2. 如果推送失败，则因为远程分支比你的本地更新，需要先用`git pull`试图合并；
+3. 如果合并有冲突，则解决冲突，并在本地提交；
+4. 没有冲突或者解决掉冲突后，再用`git push origin <branch-name>`推送就能成功！
+
+如果`git pull`提示`no tracking information`，则说明本地分支和远程分支的链接关系没有创建，用命令`git branch --set-upstream-to <branch-name> origin/<branch-name>`。
 
