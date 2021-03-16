@@ -41,5 +41,32 @@ Microsoft 的 Word 格式是二进制格式，没有办法用版本控制系统�
 
 #### 版本回退
 
+`git log` 命令显示从最近到最远的提交日志，记录了谁谁谁在啥时间都提交了啥，还有`commit id`。
 
+如果嫌输出信息太多，看得眼花缭乱的，可以试试加上`--pretty=oneline`参数
 
+每提交一个新版本，实际上 Git 就会把它们自动串成一条时间线。
+
+要想版本回退，首先，Git必须知道当前版本是哪个版本，在Git中，用`HEAD`表示当前版本，也就是最新的提交。上一个版本就是`HEAD^`，上上一个版本就是`HEAD^^`，当然往上100个版本可以写成`HEAD~100`。
+
+回退到上一个版本的命令就是 `git reset --hard HEAD^`
+
+回退后再用 `git log` 命令看看版本库的状态，会发现最新的版本变成了回退到的版本。这个时候如果还知道回退之前那个版本的 `commit id`，可以用命令 `git reset --hard commit-id`，撤销之前的回退。
+
+在Git中，总是有后悔药可以吃的。当你用`$ git reset --hard HEAD^`回退到`add distributed`版本时，再想恢复到`append GPL`，就必须找到`append GPL`的commit id。Git提供了一个命令`git reflog`用来记录你的每一次命令：
+
+![image-20210316160636102](https://gitee.com/pengpoo/pictures/raw/master/notes_imgs/2021/03/16/20210316160643.png)
+
+#### 工作区和暂存区
+
+**工作区**就是在电脑里能看到的目录
+
+工作区里有一个隐藏目录`.git`，这就是 Git 的版本库。
+
+Git的版本库里存了很多东西，其中最重要的就是称为stage（或者叫index）的暂存区，还有Git为我们自动创建的第一个分支`master`，以及指向`master`的一个指针叫`HEAD`。
+
+![image-20210316161533317](https://gitee.com/pengpoo/pictures/raw/master/notes_imgs/2021/03/16/20210316161533.png)
+
+把文件往Git版本库里添加的时候，第一步 `git add` 就是把文件修改添加到暂存区；第二步 `git commit` 就是把暂存区的所有内容提交到当前分支。
+
+从来没有使用 `git add` 命令添加过的文件，`git status` 命令输出的信息会显示 `Untracked`。
